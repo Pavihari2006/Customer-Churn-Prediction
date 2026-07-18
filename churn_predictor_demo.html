@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Customer Churn Predictor — Demo</title>
+<style>
+  :root {
+    --ink: #1a2b28;
+    --ink-soft: #4a5b57;
+    --paper: #f6f4ee;
+    --card: #ffffff;
+    --line: #dcd8cc;
+    --teal: #0f6e56;
+    --teal-light: #e1f5ee;
+    --coral: #d85a30;
+    --coral-light: #faece7;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    padding: 2.5rem 1.25rem;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; }
+  .eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--teal);
+    font-weight: 600;
+    margin: 0 0 6px;
+  }
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin: 0 0 8px;
+    letter-spacing: -0.01em;
+  }
+  .sub {
+    color: var(--ink-soft);
+    font-size: 14.5px;
+    line-height: 1.55;
+    margin: 0 0 2rem;
+    max-width: 52ch;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 1.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .card h2 {
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--ink-soft);
+    margin: 0 0 1.25rem;
+    font-weight: 600;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 1.25rem;
+  }
+  @media (max-width: 480px) { .grid { grid-template-columns: 1fr; } }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  label { font-size: 12.5px; color: var(--ink-soft); font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--teal); height: 4px; }
+  .range-val { font-size: 13px; color: var(--ink); font-weight: 600; }
+  select {
+    width: 100%;
+    padding: 9px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    background: #fbfaf6;
+    font-size: 14px;
+    color: var(--ink);
+  }
+  .predict-btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 10px;
+    background: var(--teal);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 0.5rem;
+  }
+  .predict-btn:active { transform: scale(0.99); }
+  .result {
+    display: none;
+    text-align: center;
+    padding-top: 0.25rem;
+  }
+  .result.show { display: block; }
+  .risk-label {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 5px 14px;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+  .risk-low { background: var(--teal-light); color: var(--teal); }
+  .risk-high { background: var(--coral-light); color: var(--coral); }
+  .score {
+    font-size: 40px;
+    font-weight: 700;
+    margin: 0 0 4px;
+    letter-spacing: -0.02em;
+  }
+  .score-label { font-size: 13px; color: var(--ink-soft); margin: 0 0 1.25rem; }
+  .bar-track {
+    height: 8px;
+    background: #ece9df;
+    border-radius: 999px;
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+  }
+  .bar-fill { height: 100%; border-radius: 999px; transition: width 0.4s ease; }
+  .factors { text-align: left; }
+  .factors h3 { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-soft); margin: 0 0 10px; }
+  .factor-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+    padding: 7px 0;
+    border-bottom: 1px solid #eeece3;
+  }
+  .factor-row:last-child { border-bottom: none; }
+  .factor-name { color: var(--ink); }
+  .factor-tag {
+    font-size: 11.5px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .tag-up { background: var(--coral-light); color: var(--coral); }
+  .tag-down { background: var(--teal-light); color: var(--teal); }
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #8a887e;
+    margin-top: 2rem;
+    line-height: 1.6;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Applied ML demo</p>
+  <h1>Will this customer churn?</h1>
+  <p class="sub">
+    A live demo built on the same feature-importance findings from the Telco customer
+    churn project — tenure, billing, contract type, and service add-ons. Adjust the inputs
+    below to see how churn risk shifts.
+  </p>
+
+  <div class="card">
+    <h2>Customer profile</h2>
+    <div class="grid">
+      <div class="field full">
+        <label>Tenure (months with company) — <span class="range-val" id="tenureVal">12</span></label>
+        <input type="range" id="tenure" min="0" max="72" value="12">
+      </div>
+      <div class="field full">
+        <label>Monthly charges (₹) — <span class="range-val" id="monthlyVal">70</span></label>
+        <input type="range" id="monthly" min="18" max="120" value="70">
+      </div>
+      <div class="field">
+        <label for="contract">Contract type</label>
+        <select id="contract">
+          <option value="month">Month-to-month</option>
+          <option value="one">One year</option>
+          <option value="two">Two year</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="internet">Internet service</label>
+        <select id="internet">
+          <option value="fiber">Fiber optic</option>
+          <option value="dsl">DSL</option>
+          <option value="none">No internet</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="security">Online security</label>
+        <select id="security">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="support">Tech support</label>
+        <select id="support">
+          <option value="no">No</option>
+          <option value="yes">Yes</option>
+        </select>
+      </div>
+      <div class="field full">
+        <label for="payment">Payment method</label>
+        <select id="payment">
+          <option value="echeck">Electronic check</option>
+          <option value="card">Credit card (auto)</option>
+          <option value="bank">Bank transfer (auto)</option>
+          <option value="mail">Mailed check</option>
+        </select>
+      </div>
+    </div>
+    <button class="predict-btn" onclick="predict()">Predict churn risk</button>
+  </div>
+
+  <div class="card result" id="resultCard">
+    <div class="risk-label" id="riskLabel">Low risk</div>
+    <p class="score" id="scoreVal">0%</p>
+    <p class="score-label">estimated churn probability</p>
+    <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+    <div class="factors">
+      <h3>What's driving this</h3>
+      <div id="factorList"></div>
+    </div>
+  </div>
+
+  <footer>
+    Weights approximate the feature-importance pattern found in the Random Forest model<br>
+    trained on the Telco Customer Churn dataset (7,032 records, 78.75% accuracy).
+  </footer>
+</div>
+
+<script>
+const tenureInput = document.getElementById('tenure');
+const monthlyInput = document.getElementById('monthly');
+tenureInput.oninput = () => document.getElementById('tenureVal').textContent = tenureInput.value;
+monthlyInput.oninput = () => document.getElementById('monthlyVal').textContent = monthlyInput.value;
+
+function predict() {
+  const tenure = parseInt(tenureInput.value);
+  const monthly = parseInt(monthlyInput.value);
+  const contract = document.getElementById('contract').value;
+  const internet = document.getElementById('internet').value;
+  const security = document.getElementById('security').value;
+  const support = document.getElementById('support').value;
+  const payment = document.getElementById('payment').value;
+
+  let score = 0.27; // base rate from dataset
+  const factors = [];
+
+  if (tenure < 12) { score += 0.22; factors.push(['Short tenure (new customer)', true]); }
+  else if (tenure > 40) { score -= 0.15; factors.push(['Long tenure (loyal customer)', false]); }
+
+  if (monthly > 80) { score += 0.15; factors.push(['High monthly bill', true]); }
+  else if (monthly < 40) { score -= 0.08; factors.push(['Low monthly bill', false]); }
+
+  if (contract === 'month') { score += 0.18; factors.push(['Month-to-month contract', true]); }
+  else if (contract === 'two') { score -= 0.20; factors.push(['Two-year contract', false]); }
+  else { score -= 0.05; factors.push(['One-year contract', false]); }
+
+  if (internet === 'fiber') { score += 0.10; factors.push(['Fiber optic internet', true]); }
+  else if (internet === 'none') { score -= 0.10; }
+
+  if (security === 'no') { score += 0.06; factors.push(['No online security', true]); }
+  else { score -= 0.05; factors.push(['Has online security', false]); }
+
+  if (support === 'no') { score += 0.05; factors.push(['No tech support', true]); }
+  else { score -= 0.04; factors.push(['Has tech support', false]); }
+
+  if (payment === 'echeck') { score += 0.08; factors.push(['Pays by electronic check', true]); }
+  else { score -= 0.03; factors.push(['Pays by automatic method', false]); }
+
+  score = Math.max(0.03, Math.min(0.95, score));
+  const pct = Math.round(score * 100);
+
+  const card = document.getElementById('resultCard');
+  card.classList.add('show');
+
+  const label = document.getElementById('riskLabel');
+  const isHigh = pct >= 45;
+  label.textContent = isHigh ? 'High risk' : 'Low risk';
+  label.className = 'risk-label ' + (isHigh ? 'risk-high' : 'risk-low');
+
+  document.getElementById('scoreVal').textContent = pct + '%';
+  document.getElementById('scoreVal').style.color = isHigh ? '#d85a30' : '#0f6e56';
+
+  const fill = document.getElementById('barFill');
+  fill.style.width = pct + '%';
+  fill.style.background = isHigh ? '#d85a30' : '#0f6e56';
+
+  const list = document.getElementById('factorList');
+  list.innerHTML = '';
+  factors.slice(0, 5).forEach(([name, isUp]) => {
+    const row = document.createElement('div');
+    row.className = 'factor-row';
+    row.innerHTML = `<span class="factor-name">${name}</span><span class="factor-tag ${isUp ? 'tag-up' : 'tag-down'}">${isUp ? 'raises risk' : 'lowers risk'}</span>`;
+    list.appendChild(row);
+  });
+
+  card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+</script>
+</body>
+</html>
