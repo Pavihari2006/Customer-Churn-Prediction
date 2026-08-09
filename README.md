@@ -48,11 +48,19 @@ Given the class imbalance in the dataset (~73% No / ~27% Yes), Logistic Regressi
 
 ## 🚀 How to Run
 
-1. Open the notebook in Google Colab
+### Notebook (analysis)
+1. Open `Customer_Churn_Prediction.ipynb` in Google Colab
 2. Upload the `WA_Fn-UseC_-Telco-Customer-Churn.csv` dataset
 3. Run all cells in order
 
+### Streamlit App (interactive demo)
+1. Clone this repository
+2. Install dependencies: `pip install streamlit pandas scikit-learn joblib`
+3. Run: `streamlit run app.py`
+4. Enter customer details in the browser UI to get a live churn prediction
 ## 📂 Files
 
 - `Customer_Churn_Prediction.ipynb` — full analysis and model code
 - `README.md` — project overview
+-  `app.py` — Streamlit web app for interactive churn prediction (run locally)
+- `churn_model.pkl`, `scaler.pkl`, `model_columns.pkl` — saved model artifacts used by the app
